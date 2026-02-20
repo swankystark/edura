@@ -38,10 +38,10 @@ export function Navbar() {
   ];
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 notranslate"
     >
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
@@ -73,19 +73,21 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {/* Language Selector */}
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="w-[140px] h-9">
-              <Languages className="mr-2 h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="notranslate">
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-[140px] h-9">
+                <Languages className="mr-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="notranslate">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Theme Toggle */}
           <Button

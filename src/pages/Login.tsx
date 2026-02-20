@@ -21,17 +21,7 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    const { user, error } = await signIn({ email, password });
-
-    if (error) {
-      toast({
-        title: 'Sign in failed',
-        description: error,
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
+    const { user } = await signIn({ email, password });
 
     if (user) {
       toast({

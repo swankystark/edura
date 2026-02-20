@@ -103,7 +103,63 @@ export async function getPublishedCourses(filters?: {
 }
 
 /**
- * Get user's courses
+ * Get user's enrolled courses (ones they've started or added)
+ */
+export async function getEnrolledCourses(userId?: string) {
+  try {
+    const currentUserId = userId || await getCurrentUserId();
+    if (!currentUserId) {
+      throw new Error('User must be logged in');
+    }
+
+    const { data, error } = await supabase
+      .from('user_course_progress')
+      .select(`
+        *,
+        courses (*)
+      `)
+      .eq('user_id', currentUserId)
+      .order('last_accessed', { ascending: false });
+
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return { courses: [], error: null }; // Tables not ready
+      }
+      throw error;
+    }
+
+    const courses = (data || [])
+      .filter(item => item.courses)
+      .map(item => item.courses as Course);
+
+    return { courses, error: null };
+  } catch (error: any) {
+    console.error('Error fetching enrolled courses:', error);
+    return { courses: [], error: error.message };
+  }
+}
+
+/**
+ * Enroll a user in a course
+ */
+export async function enrollInCourse(courseId: string) {
+  try {
+    if (!courseId || courseId.startsWith('ext-')) {
+      return { error: 'External courses use local storage for enrollment.' };
+    }
+
+    return await updateCourseProgress(courseId, {
+      completed_modules: 0,
+      progress_percentage: 0,
+    });
+  } catch (error: any) {
+    console.error('Error enrolling in course:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Get user's courses (owned)
  */
 export async function getUserCourses(userId?: string) {
   try {
@@ -387,10 +443,10 @@ export async function getExternalCourses(source?: 'udemy' | 'coursera') {
   try {
     // Use relative URL in development (proxied by Vite) or absolute URL in production
     const apiUrl = import.meta.env.VITE_API_URL || '/api';
-    const url = source 
+    const url = source
       ? `${apiUrl}/courses/external?source=${source}`
       : `${apiUrl}/courses/external`;
-    
+
     console.log('Fetching external courses from:', url);
     const response = await fetch(url, {
       method: 'GET',
@@ -398,22 +454,22 @@ export async function getExternalCourses(source?: 'udemy' | 'coursera') {
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API Error Response:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
-    
+
     const data = await response.json();
     console.log('Received courses:', data);
     return { courses: data.courses as ExternalCourse[], error: null };
   } catch (error: any) {
     console.error('Error fetching external courses:', error);
     // Return empty array instead of null to prevent UI errors
-    return { 
-      courses: [], 
-      error: error.message || 'Failed to fetch external courses. Make sure the backend server is running on port 3001.' 
+    return {
+      courses: [],
+      error: error.message || 'Failed to fetch external courses. Make sure the backend server is running on port 3001.'
     };
   }
 }

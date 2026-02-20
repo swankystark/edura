@@ -98,10 +98,27 @@ export async function getUserProfile(userId: string) {
       .eq('id', userId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Handle "Not Found" or "Not Acceptable" errors gracefully
+      // PostgREST returns 406 for .single() when no rows are found
+      if (error.code === 'PGRST116' || (error as any).status === 406) {
+        const state = useUserStore.getState();
+        if (state.isAuthenticated && state.user) {
+          return { profile: { ...state.user, id: userId }, error: null };
+        }
+      }
+      throw error;
+    }
     return { profile: data, error: null };
   } catch (error: any) {
-    console.error('Error fetching user profile:', error);
+    console.warn('Error fetching user profile (Supabase):', error.message || error);
+
+    // Fallback to local store data
+    const state = useUserStore.getState();
+    if (state.isAuthenticated && state.user) {
+      return { profile: { ...state.user, id: userId }, error: null };
+    }
+
     return { profile: null, error: error.message };
   }
 }

@@ -31,9 +31,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
-  getPublishedCourses,
-  getUserCourses,
-  getExternalCourses,
+  enrollInCourse,
+  getEnrolledCourses,
   type Course,
   type ExternalCourse,
 } from '@/services/courseService';
@@ -185,9 +184,9 @@ export default function Courses() {
   const loadCourses = async () => {
     setIsLoading(true);
     try {
-      const [publishedResult, myCoursesResult] = await Promise.all([
+      const [publishedResult, enrolledResult] = await Promise.all([
         getPublishedCourses(),
-        getUserCourses(),
+        getEnrolledCourses(),
       ]);
 
       // Handle published courses
@@ -204,19 +203,11 @@ export default function Courses() {
       }
 
       // Handle user courses
-      if (myCoursesResult.error) {
-        console.error('Error loading user courses:', myCoursesResult.error);
-        // Only show error if it's not a "not logged in" type error
-        if (!myCoursesResult.error.includes('logged in')) {
-          toast({
-            title: 'Warning',
-            description: myCoursesResult.error,
-            variant: 'destructive',
-          });
-        }
+      if (enrolledResult.error) {
+        console.error('Error loading enrolled courses:', enrolledResult.error);
         setMyCourses([]);
       } else {
-        setMyCourses(myCoursesResult.courses || []);
+        setMyCourses(enrolledResult.courses || []);
       }
     } catch (error: any) {
       console.error('Unexpected error loading courses:', error);
@@ -232,12 +223,47 @@ export default function Courses() {
     }
   };
 
+  const handleAddCourse = async (course: Course | ExternalCourse) => {
+    try {
+      if (course.id.startsWith('ext-')) {
+        // For external courses, we mock enrollment by saving a basic progress object to localStorage
+        const mockProgress = { progress: 0, completedModules: [] };
+        localStorage.setItem(`course_progress_${course.id}`, JSON.stringify(mockProgress));
+
+        // Add to local state if not already there
+        if (!myCourses.find(c => c.id === course.id)) {
+          // Type cast safely for local UI state
+          setMyCourses(prev => [...prev, course as unknown as Course]);
+        }
+      } else {
+        const result = await enrollInCourse(course.id);
+        if (result.error) throw new Error(result.error);
+
+        // Update local state
+        if (!myCourses.find(c => c.id === course.id)) {
+          setMyCourses(prev => [...prev, course as Course]);
+        }
+      }
+
+      toast({
+        title: 'Course Added',
+        description: `"${course.title}" has been added to your courses.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add course',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const loadExternalCourses = async () => {
     // Only load if not already loaded or if we need to refresh
     if (externalCourses.length > 0 && !isLoadingExternal) {
       return; // Already loaded
     }
-    
+
     setIsLoadingExternal(true);
     try {
       const result = await getExternalCourses();
@@ -267,7 +293,7 @@ export default function Courses() {
       // For library tab, we'll display both published courses and external courses separately
       // Filter published courses
       let filtered = [...publishedCourses];
-      
+
       if (searchQuery.trim()) {
         filtered = filtered.filter(
           (course) =>
@@ -536,17 +562,22 @@ export default function Courses() {
                           <Clock className="h-4 w-4" />
                           <span>{course.estimated_hours || 0}h</span>
                         </div>
-                        <Button size="sm" asChild>
-                          <Link to={`/courses/${course.id}`}>
-                            <TranslatedText text="View Course" />
-                          </Link>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleAddCourse(course)}>
+                            <TranslatedText text="Add Course" />
+                          </Button>
+                          <Button size="sm" asChild>
+                            <Link to={`/courses/${course.id}`}>
+                              <TranslatedText text="View Course" />
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               ))}
-              
+
               {/* External Courses - Static courses */}
               {isLoadingExternal && externalCourses.length === 0 && (
                 <div className="col-span-full flex items-center justify-center py-8">
@@ -590,20 +621,30 @@ export default function Courses() {
                       </div>
                       {course.students && (
                         <div className="text-sm text-muted-foreground">
-                          {typeof course.students === 'number' 
+                          {typeof course.students === 'number'
                             ? `${course.students.toLocaleString()} students`
                             : course.students}
                         </div>
                       )}
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        asChild
-                      >
-                        <Link to={`/courses/${course.id}`}>
-                          <TranslatedText text="View Course" />
-                        </Link>
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handleAddCourse(course)}
+                        >
+                          <TranslatedText text="Add Course" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          asChild
+                        >
+                          <Link to={`/courses/${course.id}`}>
+                            <TranslatedText text="View Course" />
+                          </Link>
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>

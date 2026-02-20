@@ -2,8 +2,8 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Effects, Preload } from '@react-three/drei';
-import { Bloom } from '@react-three/postprocessing';
+import { Preload } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useTheme } from 'next-themes';
 
@@ -270,11 +270,11 @@ export function HeroScene({ className, variant = 'panel' }: HeroSceneProps) {
         'relative overflow-hidden transition-colors duration-700',
         isPanel
           ? cn(
-              'mx-auto w-full rounded-[36px] border p-1 backdrop-blur-2xl',
-              isDark
-                ? 'border-white/10 bg-gradient-to-br from-[#0B0B1C]/95 via-[#050312]/85 to-[#120A2A]/90 shadow-[0_0_80px_rgba(96,165,250,0.45)]'
-                : 'border-slate-200 bg-gradient-to-br from-white via-[#F8F5FF] to-[#ECF3FF] shadow-[0_30px_120px_rgba(96,165,250,0.25)]',
-            )
+            'mx-auto w-full rounded-[36px] border p-1 backdrop-blur-2xl',
+            isDark
+              ? 'border-white/10 bg-gradient-to-br from-[#0B0B1C]/95 via-[#050312]/85 to-[#120A2A]/90 shadow-[0_0_80px_rgba(96,165,250,0.45)]'
+              : 'border-slate-200 bg-gradient-to-br from-white via-[#F8F5FF] to-[#ECF3FF] shadow-[0_30px_120px_rgba(96,165,250,0.25)]',
+          )
           : 'absolute inset-0 h-full w-full',
         className,
       )}
@@ -300,17 +300,17 @@ export function HeroScene({ className, variant = 'panel' }: HeroSceneProps) {
           isPanel ? 'h-[520px] md:h-[620px]' : 'h-full min-h-[520px] md:min-h-[640px]',
         )}
       >
-        <color attach="background" args={[ bgColor ]} />
-        <fog attach="fog" args={[ bgColor, 12, 24 ]} />
+        <color attach="background" args={[bgColor]} />
+        <fog attach="fog" args={[bgColor, 12, 24]} />
         <ambientLight intensity={isDark ? 0.4 : 0.7} />
         <directionalLight position={[4, 6, 4]} intensity={1.2} color={directionalColor} />
         <pointLight position={[-4, -2, 2]} intensity={0.9} color={pointColor} />
 
         <Suspense fallback={null}>
           <SceneRig isDark={isDark} spawnedStars={spawnedStars} />
-          <Effects disableGamma={false} multisamping={4}>
+          <EffectComposer>
             <Bloom intensity={0.6} luminanceThreshold={0.2} luminanceSmoothing={0.8} />
-          </Effects>
+          </EffectComposer>
           <Preload all />
         </Suspense>
       </Canvas>

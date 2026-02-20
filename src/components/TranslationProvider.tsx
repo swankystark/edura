@@ -10,16 +10,8 @@ export function TranslationProvider({ children }: { children: React.ReactNode })
   const { language } = useThemeStore();
 
   useEffect(() => {
-    // When language changes, trigger a re-render to update translations
-    // This is handled by individual components using the useTranslation hook
-    if (language !== 'en') {
-      // Force a small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        // Translations will be handled by components using useTranslation hook
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
+    // Sync with Google Translate widget
+    import('@/services/translateService').then(m => m.syncGoogleTranslate(language));
   }, [language]);
 
   return <>{children}</>;

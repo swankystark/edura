@@ -20,29 +20,9 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password.length < 6) {
-      toast({
-        title: 'Password too short',
-        description: 'Password must be at least 6 characters long.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
 
-    const { user, error } = await signUp({ email, password, name });
-
-    if (error) {
-      toast({
-        title: 'Registration failed',
-        description: error,
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
+    const { user } = await signUp({ email, password, name });
 
     if (user) {
       toast({
